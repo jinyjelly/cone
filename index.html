@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>원뿔 굴리기 9번</title>
+<style>
+/* VOICE: 밝고 또렷한 수업용 교구. 설명은 짧게, 그림은 크게.
+   IDEA: 책상 위 매트에서 원뿔을 직접 굴려 보는 수학 교구.
+   PICTURE: 원뿔이 O를 중심으로 구르며 바닥 원판을 두 가지 색으로 칠해 감.
+   COLOUR and TYPE: 흰 바탕, 청록 원뿔, 1바퀴 파랑, 2바퀴 주황, 빨간 표시선. 시스템 고딕.
+   LAYOUT: 제목 → 큰 그림 → 조작 버튼과 수치 → 단계별 풀이(눌러서 공개). */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#10161c);--ink:light-dark(#1b2430,#e9eef2);--soft:light-dark(#5a6675,#a7b3bf);--line:light-dark(#dfe5ea,#2a3641);--card:light-dark(#f7f9fa,#17212a);--b1:#2f7ff0;--b2:#f28c12;--red:#e5402f;--teal:#1f9e9b}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 "Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;overflow-x:clip}
+.band{padding:clamp(20px,3.5vw,48px) max(4vw,16px);max-width:1100px;margin:0 auto}
+h1{font-size:clamp(28px,4.4vw,44px);line-height:1.1;margin:0 0 8px;text-wrap:balance}
+.lead{margin:0;color:var(--soft);max-width:62ch}
+.fig{position:relative;height:clamp(340px,62vh,640px);margin-top:18px;border-radius:18px;overflow:hidden;background:var(--card);touch-action:none;cursor:grab}
+.fig>canvas{position:absolute;inset:0;width:100%;height:100%}
+.hint{position:absolute;left:14px;bottom:10px;font-size:13px;color:var(--soft);pointer-events:none}
+.ctrl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px}
+button,select{font:inherit;font-size:16px;min-height:44px;padding:0 18px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+button.main{background:var(--teal);border-color:var(--teal);color:#fff;font-weight:700;min-width:110px}
+button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--b1);outline-offset:2px}
+input[type=range]{flex:1 1 220px;accent-color:var(--teal);height:44px}
+.read{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
+.read div{background:var(--card);border-radius:14px;padding:12px 14px}
+.read small{display:block;font-size:13px;color:var(--soft)}
+.read b{font-size:clamp(22px,3.4vw,30px);white-space:nowrap}
+.key{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:10px;font-size:14px;color:var(--soft)}
+.key i{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:6px}
+h2{font-size:24px;margin:0 0 12px}
+details{border:1.5px solid var(--line);border-radius:14px;margin-bottom:10px;background:var(--bg)}
+summary{cursor:pointer;padding:14px 16px;font-weight:700;list-style:none;display:flex;gap:10px;align-items:baseline}
+summary::-webkit-details-marker{display:none}
+summary span{flex:none;width:28px;height:28px;border-radius:50%;background:var(--teal);color:#fff;display:inline-grid;place-items:center;font-size:15px}
+summary::after{content:"풀이 보기";margin-left:auto;font-size:13px;font-weight:400;color:var(--soft);flex:none}
+details[open] summary::after{content:"접기"}
+details p{margin:0 16px 14px 54px}
+.eq{font-size:20px;font-weight:700;white-space:nowrap}
+.ans{background:var(--teal);color:#fff;border-radius:16px;padding:16px 20px;font-size:22px;font-weight:700;margin-top:6px}
+.tip{color:var(--soft);font-size:15px;margin-top:12px}
+@media(max-width:600px){.read{grid-template-columns:1fr 1fr}.read div:last-child{grid-column:1/-1}details p{margin-left:16px}}
+</style>
+</head>
+<body>
+<section class="band">
+  <h1>원뿔을 굴려 보자</h1>
+  <p class="lead">밑면 반지름 5 cm인 원뿔을 꼭짓점 O를 중심으로 굴립니다. 원뿔이 스스로 2바퀴 돌았을 때 제자리로 돌아오는지 직접 보세요.</p>
+  <div class="fig" id="fig"><canvas id="cv"></canvas><div class="hint">그림을 끌면 보는 방향이 바뀌어요</div></div>
+  <div class="ctrl">
+    <button class="main" id="play">▶ 굴리기</button>
+    <button id="reset">처음으로</button>
+    <input type="range" id="sl" min="0" max="360" step="1" value="0" aria-label="O를 중심으로 돈 각도">
+    <select id="spd" aria-label="속도"><option value="0.5">느리게</option><option value="1" selected>보통</option><option value="2">빠르게</option></select>
+    <button id="view">위에서 보기</button>
+  </div>
+  <div class="read">
+    <div><small>O를 중심으로 돈 각도</small><b id="rDeg">0°</b></div>
+    <div><small>원뿔이 스스로 돈 바퀴</small><b id="rTurn">0.00바퀴</b></div>
+    <div><small>큰 원 둘레(20π) 중 지나간 길이</small><b id="rArc">0π cm</b></div>
+  </div>
+  <div class="key"><span><i style="background:var(--b1)"></i>첫째 바퀴에 옆면이 지나간 자리</span><span><i style="background:var(--b2)"></i>둘째 바퀴에 지나간 자리</span><span><i style="background:var(--red)"></i>원뿔의 빨간 선이 바닥에 닿은 곳</span></div>
+</section>
+
+<section class="band">
+  <h2>단계별 풀이</h2>
+  <details><summary><span>1</span>바닥에 그려지는 원의 반지름은 모선의 길이예요</summary>
+    <p>원뿔이 바닥에 닿아 있는 선은 모선이에요. 꼭짓점 O는 움직이지 않으니, 이 모선이 O를 중심으로 빙 돌면서 원을 그려요. 그래서 이 원의 반지름 = 모선의 길이 <b>l</b>이에요.</p></details>
+  <details><summary><span>2</span>큰 원의 둘레 = 밑면 둘레 × 2</summary>
+    <p>원뿔이 2바퀴 돌았더니 제자리 → 밑면 둘레만큼 두 번 굴러간 길이가 큰 원의 둘레와 같아요.<br>
+    <span class="eq">2π × l = 2 × (2π × 5)</span><br>
+    <span class="eq">2πl = 20π &nbsp;→&nbsp; l = 10 cm</span></p></details>
+  <details><summary><span>3</span>옆넓이 구하기</summary>
+    <p><b>공식으로:</b> 원뿔의 옆넓이 = π × r × l<br><span class="eq">π × 5 × 10 = 50π (cm²)</span><br><br>
+    <b>그림으로:</b> 위 그림처럼 옆면은 바닥 원판(반지름 10)을 파랑 한 번, 주황 한 번, 정확히 2번 덮어요. 그래서<br><span class="eq">옆넓이 = (π × 10²) ÷ 2 = 50π (cm²)</span></p></details>
+  <div class="ans">답: 50π cm²</div>
+  <p class="tip">한 줄 정리: 원뿔이 n바퀴 돌아 제자리로 오면 모선 = 밑면 반지름 × n 이에요. (여기서는 10 = 5 × 2)</p>
+</section>
+
+<script>
+{
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d'),fig=document.getElementById('fig');
+const L=10,R=5,H=Math.sqrt(L*L-R*R),A=Math.asin(R/L),N=72,TAU=Math.PI*2;
+let th=1.15,playing=false,speed=1,az=-1.05,el=0.8,last=0,W=0,Hh=0;
+const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+const norm=a=>{const m=Math.hypot(...a)||1;return a.map(v=>v/m)};
+const isDark=()=>{const t=document.documentElement.dataset.theme;return t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches)};
+const hex=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+const rgb=(c,k,a=1)=>`rgba(${c.map(v=>Math.min(255,Math.round(v*k))).join(',')},${a})`;
+function pal(){const d=isDark();return{mat:d?'#1c2731':'#eef3f1',ink:d?'#e9eef2':'#1b2430',soft:d?'#7f8c99':'#8a96a3',b1:hex('#2f7ff0'),b2:hex('#f28c12'),red:hex('#e5402f'),c1:hex('#20a6a2'),c2:hex('#7ed8cf'),base:hex('#5cc0b8')}}
+function camera(){
+  const D=42,c=[D*Math.cos(el)*Math.cos(az),D*Math.cos(el)*Math.sin(az),D*Math.sin(el)];
+  const f=norm(sub([0,0,0],c)),r=norm(cross(f,[0,0,1])),u=cross(r,f),F=Math.min(W,Hh)*0.5*D/13.2;
+  return p=>{const d=sub(p,c),z=dot(d,f);return[W/2+F*dot(d,r)/z,Hh/2-F*dot(d,u)/z,z]};
+}
+function cone(t){
+  const g=[Math.cos(t),Math.sin(t),0],w=[-Math.sin(t),Math.cos(t),0];
+  const a=[Math.cos(A)*g[0],Math.cos(A)*g[1],Math.sin(A)],u=[Math.sin(A)*g[0],Math.sin(A)*g[1],-Math.cos(A)];
+  const C=a.map(v=>v*H),rim=[];
+  for(let i=0;i<N;i++){const ph=i/N*TAU-(L/R)*t;rim.push(C.map((c,k)=>c+R*(Math.cos(ph)*u[k]+Math.sin(ph)*w[k])))}
+  return{C,rim,g};
+}
+function poly(pts,fill,stroke){ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.strokeStyle=stroke;ctx.stroke()}}
+function label(txt,p,col,size=16){ctx.font=`700 ${size}px "Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=4;ctx.strokeStyle=isDark()?'#10161c':'#ffffff';ctx.strokeText(txt,p[0],p[1]);ctx.fillStyle=col;ctx.fillText(txt,p[0],p[1])}
+function draw(){
+  if(!W)return;const P=pal(),pr=camera();ctx.clearRect(0,0,W,Hh);
+  const m=13;poly([[-m,-m,0],[m,-m,0],[m,m,0],[-m,m,0]].map(pr),P.mat);
+  const sector=(a0,a1,col)=>{if(a1<=a0)return;const pts=[pr([0,0,0])];for(let s=0;s<=60;s++){const a=a0+(a1-a0)*s/60;pts.push(pr([L*Math.cos(a),L*Math.sin(a),0]))}poly(pts,col)};
+  sector(0,Math.min(th,Math.PI),rgb(P.b1,1,.42));sector(Math.PI,th,rgb(P.b2,1,.48));
+  ctx.setLineDash([6,6]);ctx.lineWidth=1.6;const circ=[];for(let s=0;s<=120;s++){const a=s/120*TAU;circ.push(pr([L*Math.cos(a),L*Math.sin(a),0]))}poly(circ,null,P.soft);ctx.setLineDash([]);
+  const {C,rim,g}=cone(th),tris=[],Ld=norm([-0.4,-0.6,0.9]);
+  for(let i=0;i<N;i++){const p1=rim[i],p2=rim[(i+1)%N];
+    const n=norm(cross(sub(p1,[0,0,0]),sub(p2,[0,0,0]))),sh=.62+.38*Math.abs(dot(n,Ld));
+    const col=(i<2||i>=N-2)?P.red:(Math.floor(i/(N/8))%2?P.c2:P.c1);
+    tris.push({pts:[[0,0,0],p1,p2],col:rgb(col,sh)});
+  }
+  tris.forEach(t=>{t.s=t.pts.map(pr);t.z=(t.s[0][2]+t.s[1][2]+t.s[2][2])/3});
+  const bs=rim.map(pr);tris.push({s:bs,z:pr(C)[2],base:1});
+  tris.sort((a,b)=>b.z-a.z).forEach(t=>{if(t.base){ctx.lineWidth=2;poly(t.s,rgb(P.base,1,.55),rgb(P.c1,.8))}else{ctx.lineWidth=1;poly(t.s,t.col,t.col)}});
+  ctx.lineWidth=1;
+  const marks=[[0,'출발']];if(th>=Math.PI-1e-6)marks.push([Math.PI,'1바퀴']);
+  if(th>=TAU-1e-6)marks[0][1]='출발 = 2바퀴';
+  marks.forEach(([a,t])=>{const p=pr([L*Math.cos(a),L*Math.sin(a),0]);ctx.beginPath();ctx.arc(p[0],p[1],6,0,TAU);ctx.fillStyle=rgb(P.red,1);ctx.fill();label(t,pr([1.22*L*Math.cos(a),1.22*L*Math.sin(a),0]),rgb(P.red,1),15)});
+  const o=pr([0,0,0]);ctx.beginPath();ctx.arc(o[0],o[1],5,0,TAU);ctx.fillStyle=P.ink;ctx.fill();
+  label('O',pr([-0.9*g[0]+0.6*g[1],-0.9*g[1]-0.6*g[0],0]),P.ink,18);
+}
+const $=id=>document.getElementById(id),sl=$('sl'),play=$('play');
+function ui(){const deg=th*180/Math.PI;sl.value=Math.round(deg);$('rDeg').textContent=Math.round(deg)+'°';$('rTurn').textContent=(th/Math.PI).toFixed(2)+'바퀴';$('rArc').textContent=(10*th/Math.PI).toFixed(1).replace(/\.0$/,'')+'π cm';play.textContent=playing?'❚❚ 멈추기':(th>=TAU-1e-6?'▶ 다시 굴리기':'▶ 굴리기');draw()}
+function tick(ts){if(playing){const dt=last?(ts-last)/1000:0;th=Math.min(TAU,th+dt*speed*TAU/14);if(th>=TAU)playing=false;ui()}last=ts;requestAnimationFrame(tick)}
+play.addEventListener('click',()=>{if(!playing&&th>=TAU-1e-6)th=0;playing=!playing;ui()});
+$('reset').addEventListener('click',()=>{playing=false;th=0;ui()});
+sl.addEventListener('input',()=>{playing=false;th=sl.value*Math.PI/180;ui()});
+$('spd').addEventListener('change',e=>{speed=+e.target.value});
+$('view').addEventListener('click',e=>{const top=el<1.3;el=top?1.45:0.8;az=top?-Math.PI/2:-1.05;e.target.textContent=top?'비스듬히 보기':'위에서 보기';draw()});
+let drag=null;
+fig.addEventListener('pointerdown',e=>{drag=[e.clientX,e.clientY];fig.setPointerCapture(e.pointerId)});
+fig.addEventListener('pointermove',e=>{if(!drag)return;az-=(e.clientX-drag[0])*0.008;el=Math.max(0.12,Math.min(1.45,el+(e.clientY-drag[1])*0.006));drag=[e.clientX,e.clientY];draw()});
+fig.addEventListener('pointerup',()=>drag=null);fig.addEventListener('pointercancel',()=>drag=null);
+const ro=new ResizeObserver(()=>{const r=fig.getBoundingClientRect(),d=devicePixelRatio||1;W=r.width;Hh=r.height;cv.width=W*d;cv.height=Hh*d;ctx.setTransform(d,0,0,d,0,0);draw()});ro.observe(fig);
+const mo=new MutationObserver(draw);mo.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',draw);
+ui();requestAnimationFrame(tick);
+}
+</script>
+</body>
+</html>
